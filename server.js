@@ -4,6 +4,7 @@ const cors = require("cors");
 const app = express();
 
 app.use(cors());
+app.options("*", cors());
 
 // parse requests of content-type - application/json
 app.use(express.json());
