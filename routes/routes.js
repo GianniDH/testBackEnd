@@ -27,14 +27,6 @@ module.exports = (app) => {
         await Product.find({ categoryId: { $in: ids } })
           .limit(pageLimit * 1)
           .skip((page - 1) * pageLimit)
-          .populate({
-            path: "categoryId",
-            select: "category headCategory -_id",
-            populate: {
-              path: "headCategory",
-              select: "category -_id",
-            },
-          })
           .sort({ price: order })
           .then((productRes) => (products = productRes))
           .catch((err) => console.log(err));
@@ -44,14 +36,6 @@ module.exports = (app) => {
         })
           .limit(pageLimit * 1)
           .skip((page - 1) * pageLimit)
-          .populate({
-            path: "categoryId",
-            select: "category headCategory -_id",
-            populate: {
-              path: "headCategory",
-              select: "category -_id",
-            },
-          })
           .then((productRes) => (products = productRes))
           .catch((err) => console.log(err));
       }
@@ -61,14 +45,6 @@ module.exports = (app) => {
         await Product.find()
           .limit(pageLimit * 1)
           .skip((page - 1) * pageLimit)
-          .populate({
-            path: "categoryId",
-            select: "category headCategory -_id",
-            populate: {
-              path: "headCategory",
-              select: "category -_id",
-            },
-          })
           .sort({ price: order })
           .then((productRes) => (products = productRes))
           .catch((err) => console.log(err));
@@ -76,14 +52,6 @@ module.exports = (app) => {
         await Product.find()
           .limit(pageLimit * 1)
           .skip((page - 1) * pageLimit)
-          .populate({
-            path: "categoryId",
-            select: "category headCategory -_id",
-            populate: {
-              path: "headCategory",
-              select: "category -_id",
-            },
-          })
           .then((productRes) => (products = productRes))
           .catch((err) => console.log(err));
       }
@@ -266,7 +234,6 @@ module.exports = (app) => {
   });
   router.post("/login", async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
-    res.send(user);
     if (user == null) return res.status(400).send("User does not exist!");
     try {
       if (await bcrypt.compare(req.body.password, user.password)) {
@@ -356,10 +323,6 @@ module.exports = (app) => {
       const categories = await Category.find()
         .limit(pageLimit * 1)
         .skip((page - 1) * pageLimit)
-        .populate({
-          path: "headCategory",
-          select: "category -_id",
-        });
 
       const count = await Category.countDocuments();
 
