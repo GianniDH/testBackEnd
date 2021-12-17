@@ -1,16 +1,13 @@
 const mongoose = require("mongoose");
 
 const CategorySchema = mongoose.Schema({
-  id: {
-    type: Number,
-    required: true,
-  },
   category: {
     type: String,
     required: true,
   },
   headCategory: {
-    type: mongoose.Schema.Types.ObjectId, ref: 'Category',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
     required: false,
   },
 });

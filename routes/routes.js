@@ -1,5 +1,9 @@
 const { path } = require("express/lib/application");
+const { mongoose } = require("../models");
 const { count } = require("../models/Product");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 module.exports = (app) => {
   const Product = require("../models/Product");
@@ -12,40 +16,101 @@ module.exports = (app) => {
   const router = express.Router();
 
   router.get("/products", async (req, res) => {
-    const { page = 1, limit = 10, filters } = req.query;
 
-    try {
-      const products = await Product.find()
-        .limit(limit * 1)
+    const filters = req.query;
+    const page = filters["page"];
+    const limit = filters["limit"]
+    idsString = filters["categoryId"] ?? "";
+    ids = idsString.split("$id[]");
+    if (idsString != "") {
+      if (filters["sort"] !== undefined) {
+        const order = filters["sort"] == "low-high" ? "asc" : "desc";
+        await Product.find({ categoryId: { $in: ids } })
+                .limit(limit * 1)
         .skip((page - 1) * limit)
-        .populate({
-          path: "categoryId",
-          select: "category headCategory -_id",
-          populate: {
-            path: "headCategory",
-            select: "category -_id",
-          },
-        });
-
-      const count = await Product.countDocuments();
-
-      res.json({
+          .populate({
+            path: "categoryId",
+            select: "category headCategory -_id",
+            populate: {
+              path: "headCategory",
+              select: "category -_id",
+            },
+          })
+          .sort({ price: order })
+          .then((productRes) => (products = productRes))
+          .catch((err) => console.log(err));
+      } else {
+        await Product.find({
+          categoryId: { $in: ids },
+        })
+                .limit(limit * 1)
+        .skip((page - 1) * limit)
+          .populate({
+            path: "categoryId",
+            select: "category headCategory -_id",
+            populate: {
+              path: "headCategory",
+              select: "category -_id",
+            },
+          })
+          .then((productRes) => (products = productRes))
+          .catch((err) => console.log(err));
+      }
+    } else {
+      if (filters["sort"] !== undefined) {
+        const order = filters["sort"] == "low-high" ? "asc" : "desc";
+        await Product.find()
+                .limit(limit * 1)
+        .skip((page - 1) * limit)
+          .populate({
+            path: "categoryId",
+            select: "category headCategory -_id",
+            populate: {
+              path: "headCategory",
+              select: "category -_id",
+            },
+          })
+          .sort({ price: order })
+          .then((productRes) => (products = productRes))
+          .catch((err) => console.log(err));
+      } else {
+        await Product.find()
+                .limit(limit * 1)
+        .skip((page - 1) * limit)
+          .populate({
+            path: "categoryId",
+            select: "category headCategory -_id",
+            populate: {
+              path: "headCategory",
+              select: "category -_id",
+            },
+          })
+          .then((productRes) => (products = productRes))
+          .catch((err) => console.log(err));
+      }
+    }
+    const name = filters["name"] ?? "";
+    if (name != "") {
+      filter_product = products.filter((p) =>
+        p.name.toLowerCase().includes(name.toLowerCase())
+      );
+    } else {
+      filter_product = products;
+    }
+    res.json({
         products,
         totalPages: Math.ceil(count / limit),
         currentPage: page,
       });
-    } catch (err) {
-      console.error(err.message);
-    }
+    res.send(filter_product);
   });
 
   router.get("/products/:id", async (req, res) => {
     try {
       const product = await Product.find({ id: req.params.id });
       res.send(product);
-    } catch {
-      res.status(404);
-      res.send({ error: "Product doesn't exist!" });
+    } catch (err) {
+      res.send(err.message);
     }
   });
 
@@ -68,7 +133,7 @@ module.exports = (app) => {
       await product.save();
       res.send(product);
     } catch (err) {
-      console.log(err);
+      res.send(err.message);
     }
   });
 
@@ -115,9 +180,8 @@ module.exports = (app) => {
 
       await product.save();
       res.send(product);
-    } catch {
-      res.status(404);
-      res.send({ error: "Product doesn't exist!" });
+    } catch (err) {
+      res.send(err.message);
     }
   });
 
@@ -136,7 +200,7 @@ module.exports = (app) => {
         currentPage: page,
       });
     } catch (err) {
-      console.log(err);
+      res.send(err.message);
     }
   });
 
@@ -144,14 +208,14 @@ module.exports = (app) => {
     try {
       const user = await User.find({ id: req.params.id });
       res.send(user);
-    } catch {
-      res.status(404);
-      res.send({ error: "User doesn't exist!" });
+    } catch (err) {
+      res.send(err.message);
     }
   });
 
-  router.post("/users", async (req, res) => {
+  router.post("/register", async (req, res) => {
     try {
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
       const user = new User({
         id: req.body.id,
         isAdmin: req.body.isAdmin,
@@ -159,16 +223,61 @@ module.exports = (app) => {
         lastName: req.body.lastName,
         firstName: req.body.firstName,
         email: req.body.email,
-        password: req.body.password,
+        password: hashedPassword,
         phoneNr: req.body.phoneNr,
         address1: req.body.address1,
         address2: req.body.address2,
         postalCode: req.body.postalCode,
       });
       await user.save();
-      res.send(user);
+      const accessToken = jwt.sign(
+        {
+          _id: user._id,
+          isAdmin: user.isAdmin,
+          isSuperAdmin: user.isSuperAdmin,
+          lastName: user.lastName,
+          firstName: user.firstName,
+          email: user.email,
+          password: user.password,
+          phoneNr: user.phoneNr,
+          address1: user.address1,
+          address2: user.address2,
+          postalCode: user.postalCode,
+        },
+        process.env.ACCESS_TOKEN_SECRET
+      );
+      res.json({ accessToken: accessToken, user: user });
     } catch (err) {
-      console.log(err);
+      res.status(500).send(err.message);
+    }
+  });
+  router.post("/login", async (req, res) => {
+    const user = await User.findOne({ email: req.body.user.email });
+    if (user == null) return res.status(400).send("User does not exist!");
+    try {
+      if (await bcrypt.compare(req.body.user.password, user.password)) {
+        const accessToken = jwt.sign(
+          {
+            _id: user._id,
+            isAdmin: user.isAdmin,
+            isSuperAdmin: user.isSuperAdmin,
+            lastName: user.lastName,
+            firstName: user.firstName,
+            email: user.email,
+            password: user.password,
+            phoneNr: user.phoneNr,
+            address1: user.address1,
+            address2: user.address2,
+            postalCode: user.postalCode,
+          },
+          process.env.ACCESS_TOKEN_SECRET
+        );
+        res.json({ accessToken: accessToken, user: user });
+      } else {
+        res.send("Not Allowed!");
+      }
+    } catch {
+      res.status(500).send();
     }
   });
 
@@ -212,9 +321,8 @@ module.exports = (app) => {
 
       await user.save();
       res.send(user);
-    } catch {
-      res.status(404);
-      res.send({ error: "User doesn't exist!" });
+    } catch (err) {
+      res.status(500).send();
     }
   });
 
@@ -222,9 +330,8 @@ module.exports = (app) => {
     try {
       await User.deleteOne({ id: req.params.id });
       res.status(204).send();
-    } catch {
-      res.status(404);
-      res.send({ error: "User doesn't exist!" });
+    } catch (err) {
+      res.status(500).send();
     }
   });
 
@@ -248,7 +355,7 @@ module.exports = (app) => {
         currentPage: page,
       });
     } catch (err) {
-      console.log(err);
+      res.status(500).send();
     }
   });
 
@@ -257,9 +364,8 @@ module.exports = (app) => {
       const category = await Category.find({ id: req.params.id });
 
       res.send(category);
-    } catch {
-      res.status(404);
-      res.send({ error: "Category doesn't exist!" });
+    } catch (err) {
+      res.status(500).send();
     }
   });
 
@@ -273,7 +379,7 @@ module.exports = (app) => {
       await category.save();
       res.send(category);
     } catch (err) {
-      console.log(err);
+      res.status(500).send();
     }
   });
 
@@ -293,9 +399,8 @@ module.exports = (app) => {
 
       await category.save();
       res.send(category);
-    } catch {
-      res.status(404);
-      res.send({ error: "Category doesn't exist!" });
+    } catch (err) {
+      res.status(500).send();
     }
   });
 
@@ -303,9 +408,8 @@ module.exports = (app) => {
     try {
       await Category.deleteOne({ id: req.params.id });
       res.status(204).send();
-    } catch {
-      res.status(404);
-      res.send({ error: "Category doesn't exist!" });
+    } catch (err) {
+      res.status(500).send();
     }
   });
 
@@ -326,7 +430,7 @@ module.exports = (app) => {
         currentPage: page,
       });
     } catch (err) {
-      console.log(err);
+      res.status(500).send();
     }
   });
 
@@ -335,9 +439,38 @@ module.exports = (app) => {
       const order = await Order.find({ id: req.params.id });
 
       res.send(order);
-    } catch {
-      res.status(404);
-      res.send({ error: "Order doesn't exist!" });
+    } catch (err) {
+      res.send(err.message);
+    }
+  });
+  router.get("/orders", async (req, res) => {
+    const { page = 1, limit = 10, filters } = req.query;
+
+    try {
+      const orders = await Order.find().populate({
+        path: "userId",
+        select: "-password -isAdmin -isSuperAdmin",
+      });
+
+      const count = await Order.countDocuments();
+
+      res.json({
+        orders,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+      });
+    } catch (err) {
+      res.status(500).send();
+    }
+  });
+
+  router.get("/user/orders", authenticateToken, async (req, res) => {
+    try {
+      const order = await Order.find({ userId: req.user._id });
+
+      res.send(order);
+    } catch (err) {
+      res.send(err.message);
     }
   });
 
@@ -351,7 +484,7 @@ module.exports = (app) => {
       await order.save();
       res.send(order);
     } catch (err) {
-      console.log(err);
+      res.status(500).send();
     }
   });
 
@@ -371,9 +504,8 @@ module.exports = (app) => {
 
       await order.save();
       res.send(order);
-    } catch {
-      res.status(404);
-      res.send({ error: "Order doesn't exist!" });
+    } catch (err) {
+      res.status(500).send();
     }
   });
 
@@ -381,9 +513,8 @@ module.exports = (app) => {
     try {
       await Order.deleteOne({ id: req.params.id });
       res.status(204).send();
-    } catch {
-      res.status(404);
-      res.send({ error: "Order doesn't exist!" });
+    } catch (err) {
+      res.status(500).send();
     }
   });
 
@@ -418,7 +549,7 @@ module.exports = (app) => {
         currentPage: page,
       });
     } catch (err) {
-      console.log(err);
+      res.status(500).send();
     }
   });
 
@@ -426,9 +557,8 @@ module.exports = (app) => {
     try {
       const orderdetail = await OrderDetail.find({ id: req.params.id });
       res.send(orderdetail);
-    } catch {
-      res.status(404);
-      res.send({ error: "OrderDetail doesn't exist!" });
+    } catch (err) {
+      res.status(500).send();
     }
   });
 
@@ -443,14 +573,13 @@ module.exports = (app) => {
       await orderdetail.save();
       res.send(orderdetail);
     } catch (err) {
-      res.send(err);
+      res.status(500).send();
     }
   });
 
   router.patch("/orderdetails/:id", async (req, res) => {
     try {
       const orderdetail = await OrderDetail.findOne({ id: req.params.id });
-
       if (req.body.id) {
         orderdetail.id = req.body.id;
       }
@@ -466,9 +595,8 @@ module.exports = (app) => {
 
       await orderdetail.save();
       res.send(orderdetail);
-    } catch {
-      res.status(404);
-      res.send({ error: "OrderDetail doesn't exist!" });
+    } catch (err) {
+      res.status(500).send();
     }
   });
 
@@ -476,12 +604,35 @@ module.exports = (app) => {
     try {
       await OrderDetail.deleteOne({ id: req.params.id });
       res.status(204).send();
-    } catch {
-      res.status(404);
-      res.send({ error: "OrderDetail doesn't exist!" });
+    } catch (err) {
+      res.status(500).send();
     }
   });
-  app.use("/api", router);
+    app.use("/api", router);
 
   module.exports = router;
 };
+function authenticateAdmin(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (token == null) return res.sendStatus(401);
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    if (user.isAdmin) {
+      req.user = user;
+      next();
+    } else {
+      if (err) return res.sendStatus(403);
+    }
+  });
+}
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (token == null) return res.sendStatus(401);
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+}

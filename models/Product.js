@@ -1,12 +1,9 @@
 const mongoose = require("mongoose");
 
 const ProductSchema = mongoose.Schema({
-  id: {
-    type: Number,
-    required: true,
-  },
   categoryId: {
-    type: mongoose.Schema.Types.ObjectId, ref: 'Category',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
     required: true,
   },
   name: {
@@ -20,6 +17,7 @@ const ProductSchema = mongoose.Schema({
   description: {
     type: String,
     required: true,
+    maxlength: [100, "Description is too long!"],
   },
   isActive: {
     type: Boolean,
@@ -38,6 +36,11 @@ const ProductSchema = mongoose.Schema({
   },
   expirationDate: {
     type: Date,
+    min: [
+      new Date(),
+      "Expiration date has to be on a future date! It is currently: " +
+        new Date(),
+    ],
   },
   amountProduct: {
     type: String,
@@ -46,7 +49,6 @@ const ProductSchema = mongoose.Schema({
     type: Array,
     required: true,
   },
-  
 });
 
 module.exports = mongoose.model("Product", ProductSchema);
