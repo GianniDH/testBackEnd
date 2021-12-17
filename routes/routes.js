@@ -264,11 +264,12 @@ module.exports = (app) => {
       res.status(500).send(err.message);
     }
   });
-  router.post("/login", async (req, res, next) => {
+  router.post("/login", async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
+    res.send(user);
     if (user == null) return res.status(400).send("User does not exist!");
     try {
-      if (await bcrypt.compare(req.body.user.password, user.password)) {
+      if (await bcrypt.compare(req.body.password, user.password)) {
         const accessToken = jwt.sign(
           {
             _id: user._id,
@@ -286,7 +287,6 @@ module.exports = (app) => {
           process.env.ACCESS_TOKEN_SECRET
         );
         res.json({ accessToken: accessToken, user: user });
-        next();
       } else {
         res.send("Not Allowed!");
       }
