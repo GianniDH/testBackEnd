@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
+const pageLimit = 9;
 module.exports = (app) => {
   const Product = require("../models/Product");
   const User = require("../models/User");
@@ -18,15 +19,14 @@ module.exports = (app) => {
   router.get("/products", async (req, res) => {
     const filters = req.query;
     const page = filters["page"];
-    const limit = filters["limit"];
     idsString = filters["categoryId"] ?? "";
     ids = idsString.split("$id[]");
     if (idsString != "") {
       if (filters["sort"] !== undefined) {
         const order = filters["sort"] == "low-high" ? "asc" : "desc";
         await Product.find({ categoryId: { $in: ids } })
-          .limit(limit * 1)
-          .skip((page - 1) * limit)
+          .limit(pageLimit * 1)
+          .skip((page - 1) * pageLimit)
           .populate({
             path: "categoryId",
             select: "category headCategory -_id",
@@ -42,8 +42,8 @@ module.exports = (app) => {
         await Product.find({
           categoryId: { $in: ids },
         })
-          .limit(limit * 1)
-          .skip((page - 1) * limit)
+          .limit(pageLimit * 1)
+          .skip((page - 1) * pageLimit)
           .populate({
             path: "categoryId",
             select: "category headCategory -_id",
@@ -59,8 +59,8 @@ module.exports = (app) => {
       if (filters["sort"] !== undefined) {
         const order = filters["sort"] == "low-high" ? "asc" : "desc";
         await Product.find()
-          .limit(limit * 1)
-          .skip((page - 1) * limit)
+          .limit(pageLimit * 1)
+          .skip((page - 1) * pageLimit)
           .populate({
             path: "categoryId",
             select: "category headCategory -_id",
@@ -74,8 +74,8 @@ module.exports = (app) => {
           .catch((err) => console.log(err));
       } else {
         await Product.find()
-          .limit(limit * 1)
-          .skip((page - 1) * limit)
+          .limit(pageLimit * 1)
+          .skip((page - 1) * pageLimit)
           .populate({
             path: "categoryId",
             select: "category headCategory -_id",
@@ -96,13 +96,12 @@ module.exports = (app) => {
     } else {
       filter_product = products;
     }
-    const count = await Product.countDocuments();
-
     res.json({
-        filter_product,
-        totalPages: Math.ceil(count / limit),
-        currentPage: page,
-      });
+      products,
+      totalPages: Math.ceil(count / pageLimit),
+      currentPage: page,
+    });
+    res.send(filter_product);
   });
 
   router.get("/products/:id", async (req, res) => {
@@ -185,17 +184,17 @@ module.exports = (app) => {
   });
 
   router.get("/users", async (req, res) => {
-    const { page = 1, limit = 10, filters } = req.query;
+    const { page = 1, filters } = req.query;
     try {
       const users = await User.find()
-        .limit(limit * 1)
-        .skip((page - 1) * limit)
+        .limit(pageLimit * 1)
+        .skip((pageLimit - 1) * pageLimit)
         .select("-password");
 
       const count = await User.countDocuments();
       res.json({
         users,
-        totalPages: Math.ceil(count / limit),
+        totalPages: Math.ceil(count / pageLimit),
         currentPage: page,
       });
     } catch (err) {
@@ -334,12 +333,12 @@ module.exports = (app) => {
   });
 
   router.get("/categories", async (req, res) => {
-    const { page = 1, limit = 10, filters } = req.query;
+    const { page = 1, filters } = req.query;
 
     try {
       const categories = await Category.find()
-        .limit(limit * 1)
-        .skip((page - 1) * limit)
+        .limit(pageLimit * 1)
+        .skip((page - 1) * pageLimit)
         .populate({
           path: "headCategory",
           select: "category -_id",
@@ -349,7 +348,7 @@ module.exports = (app) => {
 
       res.json({
         categories,
-        totalPages: Math.ceil(count / limit),
+        totalPages: Math.ceil(count / pageLimit),
         currentPage: page,
       });
     } catch (err) {
@@ -411,7 +410,7 @@ module.exports = (app) => {
   });
 
   router.get("/orders", async (req, res) => {
-    const { page = 1, limit = 10, filters } = req.query;
+    const { page = 1, filters } = req.query;
 
     try {
       const orders = await Order.find().populate({
@@ -423,7 +422,7 @@ module.exports = (app) => {
 
       res.json({
         orders,
-        totalPages: Math.ceil(count / limit),
+        totalPages: Math.ceil(count / pageLimit),
         currentPage: page,
       });
     } catch (err) {
@@ -441,7 +440,7 @@ module.exports = (app) => {
     }
   });
   router.get("/orders", async (req, res) => {
-    const { page = 1, limit = 10, filters } = req.query;
+    const { page = 1, filters } = req.query;
 
     try {
       const orders = await Order.find().populate({
@@ -453,7 +452,7 @@ module.exports = (app) => {
 
       res.json({
         orders,
-        totalPages: Math.ceil(count / limit),
+        totalPages: Math.ceil(count / pageLimit),
         currentPage: page,
       });
     } catch (err) {
@@ -516,7 +515,7 @@ module.exports = (app) => {
   });
 
   router.get("/orderdetails", async (req, res) => {
-    const { page = 1, limit = 10, filters } = req.query;
+    const { page = 1, pageLimit = 10, filters } = req.query;
     try {
       var populateQuery = [
         {
@@ -542,7 +541,7 @@ module.exports = (app) => {
       const count = await OrderDetail.countDocuments();
       res.json({
         orderdetails,
-        totalPages: Math.ceil(count / limit),
+        totalPages: Math.ceil(count / pageLimit),
         currentPage: page,
       });
     } catch (err) {
@@ -597,18 +596,11 @@ module.exports = (app) => {
     }
   });
 
-  router.delete("/orderdetails/:id", async (req, res) => {
-    try {
-      await OrderDetail.deleteOne({ _id: req.params.id });
-      res.status(204).send();
-    } catch (err) {
-      res.status(500).send();
-    }
-  });
   app.use("/api", router);
 
   module.exports = router;
 };
+
 function authenticateAdmin(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
