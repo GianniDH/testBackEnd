@@ -16,18 +16,17 @@ module.exports = (app) => {
   const router = express.Router();
 
   router.get("/products", async (req, res) => {
-
     const filters = req.query;
     const page = filters["page"];
-    const limit = filters["limit"]
+    const limit = filters["limit"];
     idsString = filters["categoryId"] ?? "";
     ids = idsString.split("$id[]");
     if (idsString != "") {
       if (filters["sort"] !== undefined) {
         const order = filters["sort"] == "low-high" ? "asc" : "desc";
         await Product.find({ categoryId: { $in: ids } })
-                .limit(limit * 1)
-        .skip((page - 1) * limit)
+          .limit(limit * 1)
+          .skip((page - 1) * limit)
           .populate({
             path: "categoryId",
             select: "category headCategory -_id",
@@ -43,8 +42,8 @@ module.exports = (app) => {
         await Product.find({
           categoryId: { $in: ids },
         })
-                .limit(limit * 1)
-        .skip((page - 1) * limit)
+          .limit(limit * 1)
+          .skip((page - 1) * limit)
           .populate({
             path: "categoryId",
             select: "category headCategory -_id",
@@ -60,8 +59,8 @@ module.exports = (app) => {
       if (filters["sort"] !== undefined) {
         const order = filters["sort"] == "low-high" ? "asc" : "desc";
         await Product.find()
-                .limit(limit * 1)
-        .skip((page - 1) * limit)
+          .limit(limit * 1)
+          .skip((page - 1) * limit)
           .populate({
             path: "categoryId",
             select: "category headCategory -_id",
@@ -75,8 +74,8 @@ module.exports = (app) => {
           .catch((err) => console.log(err));
       } else {
         await Product.find()
-                .limit(limit * 1)
-        .skip((page - 1) * limit)
+          .limit(limit * 1)
+          .skip((page - 1) * limit)
           .populate({
             path: "categoryId",
             select: "category headCategory -_id",
@@ -97,17 +96,18 @@ module.exports = (app) => {
     } else {
       filter_product = products;
     }
+    const count = await Product.countDocuments();
+
     res.json({
-        products,
+        filter_product,
         totalPages: Math.ceil(count / limit),
         currentPage: page,
       });
-    res.send(filter_product);
   });
 
   router.get("/products/:id", async (req, res) => {
     try {
-      const product = await Product.find({ id: req.params.id });
+      const product = await Product.find({ _id: req.params.id });
       res.send(product);
     } catch (err) {
       res.send(err.message);
@@ -117,7 +117,6 @@ module.exports = (app) => {
   router.post("/products", async (req, res) => {
     try {
       const product = new Product({
-        id: req.body.id,
         categoryId: req.body.categoryId,
         name: req.body.name,
         price: req.body.price,
@@ -139,10 +138,10 @@ module.exports = (app) => {
 
   router.patch("/products/:id", async (req, res) => {
     try {
-      const product = await Product.findOne({ id: req.params.id });
+      const product = await Product.findOne({ _id: req.params.id });
 
-      if (req.body.id) {
-        product.id = req.body.id;
+      if (req.body._id) {
+        product._id = req.body._id;
       }
       if (req.body.categoryId) {
         product.categoryId = req.body.categoryId;
@@ -206,7 +205,7 @@ module.exports = (app) => {
 
   router.get("/users/:id", async (req, res) => {
     try {
-      const user = await User.find({ id: req.params.id });
+      const user = await User.find({ _id: req.params.id });
       res.send(user);
     } catch (err) {
       res.send(err.message);
@@ -217,7 +216,6 @@ module.exports = (app) => {
     try {
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
       const user = new User({
-        id: req.body.id,
         isAdmin: req.body.isAdmin,
         isSuperAdmin: req.body.isSuperAdmin,
         lastName: req.body.lastName,
@@ -283,10 +281,10 @@ module.exports = (app) => {
 
   router.patch("/users/:id", async (req, res) => {
     try {
-      const user = await User.findOne({ id: req.params.id });
+      const user = await User.findOne({ _id: req.params.id });
 
-      if (req.body.id) {
-        user.id = req.body.id;
+      if (req.body._id) {
+        user._id = req.body._id;
       }
       if (req.body.isAdmin) {
         user.isAdmin = req.body.isAdmin;
@@ -328,7 +326,7 @@ module.exports = (app) => {
 
   router.delete("/users/:id", async (req, res) => {
     try {
-      await User.deleteOne({ id: req.params.id });
+      await User.deleteOne({ _id: req.params.id });
       res.status(204).send();
     } catch (err) {
       res.status(500).send();
@@ -361,7 +359,7 @@ module.exports = (app) => {
 
   router.get("/categories/:id", async (req, res) => {
     try {
-      const category = await Category.find({ id: req.params.id });
+      const category = await Category.find({ _id: req.params.id });
 
       res.send(category);
     } catch (err) {
@@ -372,7 +370,6 @@ module.exports = (app) => {
   router.post("/categories", async (req, res) => {
     try {
       const category = new Category({
-        id: req.body.id,
         category: req.body.category,
         headCategory: req.body.headCategory,
       });
@@ -385,7 +382,7 @@ module.exports = (app) => {
 
   router.patch("/categories/:id", async (req, res) => {
     try {
-      const category = await Category.findOne({ id: req.params.id });
+      const category = await Category.findOne({ _id: req.params.id });
 
       if (req.body.id) {
         category.id = req.body.id;
@@ -406,7 +403,7 @@ module.exports = (app) => {
 
   router.delete("/categories/:id", async (req, res) => {
     try {
-      await Category.deleteOne({ id: req.params.id });
+      await Category.deleteOne({ _id: req.params.id });
       res.status(204).send();
     } catch (err) {
       res.status(500).send();
@@ -436,7 +433,7 @@ module.exports = (app) => {
 
   router.get("/orders/:id", async (req, res) => {
     try {
-      const order = await Order.find({ id: req.params.id });
+      const order = await Order.find({ _id: req.params.id });
 
       res.send(order);
     } catch (err) {
@@ -464,6 +461,7 @@ module.exports = (app) => {
     }
   });
 
+  //GET ORDER OF USER
   router.get("/user/orders", authenticateToken, async (req, res) => {
     try {
       const order = await Order.find({ userId: req.user._id });
@@ -477,7 +475,6 @@ module.exports = (app) => {
   router.post("/orders", async (req, res) => {
     try {
       const order = new Order({
-        id: req.body.id,
         userId: req.body.userId,
         date: req.body.date,
       });
@@ -490,7 +487,7 @@ module.exports = (app) => {
 
   router.patch("/orders/:id", async (req, res) => {
     try {
-      const order = await Order.findOne({ id: req.params.id });
+      const order = await Order.findOne({ _id: req.params.id });
 
       if (req.body.id) {
         order.id = req.body.id;
@@ -511,7 +508,7 @@ module.exports = (app) => {
 
   router.delete("/orders/:id", async (req, res) => {
     try {
-      await Order.deleteOne({ id: req.params.id });
+      await Order.deleteOne({ _id: req.params.id });
       res.status(204).send();
     } catch (err) {
       res.status(500).send();
@@ -553,9 +550,10 @@ module.exports = (app) => {
     }
   });
 
+  //GET BY ORDERID
   router.get("/orderdetails/:id", async (req, res) => {
     try {
-      const orderdetail = await OrderDetail.find({ id: req.params.id });
+      const orderdetail = await OrderDetail.find({ orderId: req.params.id });
       res.send(orderdetail);
     } catch (err) {
       res.status(500).send();
@@ -565,7 +563,6 @@ module.exports = (app) => {
   router.post("/orderdetails", async (req, res) => {
     try {
       const orderdetail = new OrderDetail({
-        id: req.body.id,
         productId: req.body.productId,
         orderId: req.body.orderId,
         amount: req.body.amount,
@@ -579,9 +576,9 @@ module.exports = (app) => {
 
   router.patch("/orderdetails/:id", async (req, res) => {
     try {
-      const orderdetail = await OrderDetail.findOne({ id: req.params.id });
-      if (req.body.id) {
-        orderdetail.id = req.body.id;
+      const orderdetail = await OrderDetail.findOne({ _id: req.params.id });
+      if (req.body._id) {
+        orderdetail._id = req.body._id;
       }
       if (req.body.productId) {
         orderdetail.productId = req.body.productId;
@@ -602,13 +599,13 @@ module.exports = (app) => {
 
   router.delete("/orderdetails/:id", async (req, res) => {
     try {
-      await OrderDetail.deleteOne({ id: req.params.id });
+      await OrderDetail.deleteOne({ _id: req.params.id });
       res.status(204).send();
     } catch (err) {
       res.status(500).send();
     }
   });
-    app.use("/api", router);
+  app.use("/api", router);
 
   module.exports = router;
 };
