@@ -107,18 +107,18 @@ module.exports = (app) => {
   });
 
   router.get("/allproductsname", async (req, res, next) => {
-    products = await Product.find().select('name')
-    const filters = req.query; 
+    products = await Product.find().select("name");
+    const filters = req.query;
     const name = filters["name"] ?? "";
-      if (name != "") {
-        filter_product = products.filter((p) =>
-          p.name.toLowerCase().includes(name.toLowerCase())
-        );
-      } else {
-        filter_product = products;
-      }
-      res.send(filter_product)
-  })
+    if (name != "") {
+      filter_product = products.filter((p) =>
+        p.name.toLowerCase().includes(name.toLowerCase())
+      );
+    } else {
+      filter_product = products;
+    }
+    res.send(filter_product);
+  });
 
   router.get("/products/:id", async (req, res) => {
     try {
@@ -265,7 +265,7 @@ module.exports = (app) => {
     }
   });
   router.post("/login", async (req, res, next) => {
-    const user = await User.findOne({ email: req.body.user.email });
+    const user = await User.findOne({ email: req.body.email });
     if (user == null) return res.status(400).send("User does not exist!");
     try {
       if (await bcrypt.compare(req.body.user.password, user.password)) {
