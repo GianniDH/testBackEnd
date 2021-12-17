@@ -96,12 +96,13 @@ module.exports = (app) => {
     } else {
       filter_product = products;
     }
+    const count = await Product.countDocuments();
+
     res.json({
-      products,
+      filter_product,
       totalPages: Math.ceil(count / pageLimit),
       currentPage: page,
     });
-    res.send(filter_product);
   });
 
   router.get("/products/:id", async (req, res) => {
