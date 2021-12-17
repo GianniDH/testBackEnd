@@ -16,7 +16,7 @@ module.exports = (app) => {
   const express = require("express");
   const router = express.Router();
 
-  router.get("/products", async (req, res) => {
+  router.get("/products", async (req, res, next) => {
     const filters = req.query;
     const page = filters["page"];
     idsString = filters["categoryId"] ?? "";
@@ -103,6 +103,7 @@ module.exports = (app) => {
       totalPages: Math.ceil(count / pageLimit),
       currentPage: page,
     });
+    next();
   });
 
   router.get("/products/:id", async (req, res) => {
@@ -249,7 +250,7 @@ module.exports = (app) => {
       res.status(500).send(err.message);
     }
   });
-  router.post("/login", async (req, res) => {
+  router.post("/login", async (req, res, next) => {
     const user = await User.findOne({ email: req.body.user.email });
     if (user == null) return res.status(400).send("User does not exist!");
     try {
@@ -271,6 +272,7 @@ module.exports = (app) => {
           process.env.ACCESS_TOKEN_SECRET
         );
         res.json({ accessToken: accessToken, user: user });
+        next();
       } else {
         res.send("Not Allowed!");
       }
