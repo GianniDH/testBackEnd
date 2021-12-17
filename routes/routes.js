@@ -90,7 +90,7 @@ module.exports = (app) => {
 
   router.get("/products/:id", async (req, res) => {
     try {
-      const product = await Product.find({ _id: req.params.id });
+      const product = await Product.findOne({ _id: req.params.id });
       res.send(product);
     } catch (err) {
       res.send(err.message);
