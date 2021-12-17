@@ -168,7 +168,7 @@ module.exports = (app) => {
   });
 
   router.get("/users", async (req, res) => {
-    const { page = 1, filters } = req.query;
+    const { page = 1, pageLimit = 9, filters } = req.query;
     try {
       const users = await User.find()
         .limit(pageLimit * 1)
@@ -317,7 +317,7 @@ module.exports = (app) => {
   });
 
   router.get("/categories", async (req, res) => {
-    const { page = 1, filters } = req.query;
+    const { page = 1, pageLimit = 9, filters } = req.query;
 
     try {
       const categories = await Category.find()
@@ -419,26 +419,7 @@ module.exports = (app) => {
       res.send(err.message);
     }
   });
-  router.get("/orders", async (req, res) => {
-    const { page = 1, filters } = req.query;
 
-    try {
-      const orders = await Order.find().populate({
-        path: "userId",
-        select: "-password -isAdmin -isSuperAdmin",
-      });
-
-      const count = await Order.countDocuments();
-
-      res.json({
-        orders,
-        totalPages: Math.ceil(count / pageLimit),
-        currentPage: page,
-      });
-    } catch (err) {
-      res.status(500).send();
-    }
-  });
 
   //GET ORDER OF USER
   router.get("/user/orders", authenticateToken, async (req, res) => {
@@ -495,28 +476,9 @@ module.exports = (app) => {
   });
 
   router.get("/orderdetails", async (req, res) => {
-    const { page = 1, pageLimit = 10, filters } = req.query;
+    const { page = 1, pageLimit = 9, filters } = req.query;
     try {
-      var populateQuery = [
-        {
-          path: "productId",
-          select: "-_id",
-          populate: {
-            path: "categoryId",
-            select: "-_id",
-            populate: { path: "headCategory", select: "category -_id" },
-          },
-        },
-        {
-          path: "orderId",
-          populate: {
-            path: "userId",
-            select: "-_id -password -isAdmin -isSuperAdmin",
-          },
-        },
-      ];
-
-      const orderdetails = await OrderDetail.find().populate(populateQuery);
+      const orderdetails = await OrderDetail.find()
 
       const count = await OrderDetail.countDocuments();
       res.json({
