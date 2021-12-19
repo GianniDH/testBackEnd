@@ -16,6 +16,7 @@ module.exports = (app) => {
   const express = require("express");
   const router = express.Router();
 
+  //Everyone
   router.get("/products", async (req, res, next) => {
     const filters = req.query;
     const page = filters["page"];
@@ -74,6 +75,7 @@ module.exports = (app) => {
     next();
   });
 
+  //Everyone
   router.get("/allproductsname", async (req, res, next) => {
     products = await Product.find().select("name");
     const filters = req.query;
@@ -88,6 +90,7 @@ module.exports = (app) => {
     res.send(filter_product);
   });
 
+  //Everyone
   router.get("/products/:id", async (req, res) => {
     try {
       const product = await Product.findOne({ _id: req.params.id });
@@ -97,7 +100,8 @@ module.exports = (app) => {
     }
   });
 
-  router.post("/products", async (req, res) => {
+  //Admin
+  router.post("/products", authenticateAdmin, async (req, res) => {
     try {
       const product = new Product({
         categoryId: req.body.categoryId,
@@ -119,7 +123,8 @@ module.exports = (app) => {
     }
   });
 
-  router.patch("/products/:id", async (req, res) => {
+  //Admin
+  router.patch("/products/:id", authenticateAdmin, async (req, res) => {
     try {
       const product = await Product.findOne({ _id: req.params.id });
 
@@ -166,14 +171,22 @@ module.exports = (app) => {
       res.send(err.message);
     }
   });
-
-  router.get("/users", async (req, res) => {
-    const { page = 1, pageLimit = 9, filters } = req.query;
+  //Admin
+  router.delete("/products/:id", authenticateAdmin, async (req, res) => {
+    try {
+      await Product.deleteOne({ _id: req.params.id });
+      res.status(204).send();
+    } catch (err) {
+      res.status(500).send();
+    }
+  });
+  //Admin
+  router.get("/users", authenticateAdmin, async (req, res) => {
+    const { page = 1, filters } = req.query;
     try {
       const users = await User.find()
         .limit(pageLimit * 1)
-        .skip((pageLimit - 1) * pageLimit)
-        .select("-password");
+        .skip((pageLimit - 1) * pageLimit);
 
       const count = await User.countDocuments();
       res.json({
@@ -185,8 +198,17 @@ module.exports = (app) => {
       res.send(err.message);
     }
   });
-
-  router.get("/users/:id", async (req, res) => {
+  //User personal data request
+  router.get("/user", authenticateToken, async (req, res) => {
+    try {
+      const user = await User.find({ _id: req.user._id });
+      res.send(user);
+    } catch (err) {
+      res.send(err.message);
+    }
+  });
+  //Admin
+  router.get("/users/:id", authenticateAdmin, async (req, res) => {
     try {
       const user = await User.find({ _id: req.params.id });
       res.send(user);
@@ -194,7 +216,7 @@ module.exports = (app) => {
       res.send(err.message);
     }
   });
-
+  //Everyone
   router.post("/register", async (req, res) => {
     try {
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
@@ -232,6 +254,7 @@ module.exports = (app) => {
       res.status(500).send(err.message);
     }
   });
+  //Everyone
   router.post("/login", async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
     if (user == null) return res.status(400).send("User does not exist!");
@@ -261,8 +284,8 @@ module.exports = (app) => {
       res.status(500).send();
     }
   });
-
-  router.patch("/users/:id", async (req, res) => {
+  //Admin
+  router.patch("/users/:id", authenticateAdmin, async (req, res) => {
     try {
       const user = await User.findOne({ _id: req.params.id });
 
@@ -306,8 +329,53 @@ module.exports = (app) => {
       res.status(500).send();
     }
   });
+  //User personal edit
+  router.patch("/user", authenticateToken, async (req, res) => {
+    try {
+      const user = await User.findOne({ _id: req.user._id });
 
-  router.delete("/users/:id", async (req, res) => {
+      if (req.body._id) {
+        user._id = req.body._id;
+      }
+      if (req.body.isAdmin) {
+        user.isAdmin = req.body.isAdmin;
+      }
+      if (req.body.isSuperAdmin) {
+        user.isSuperAdmin = req.body.isSuperAdmin;
+      }
+      if (req.body.lastName) {
+        user.lastName = req.body.lastName;
+      }
+      if (req.body.firstName) {
+        user.firstName = req.body.firstName;
+      }
+      if (req.body.email) {
+        user.email = req.body.email;
+      }
+      if (req.body.password) {
+        user.password = req.body.password;
+      }
+      if (req.body.phoneNr) {
+        user.phoneNr = req.body.phoneNr;
+      }
+      if (req.body.address1) {
+        user.address1 = req.body.address1;
+      }
+      if (req.body.address2) {
+        user.address2 = req.body.address2;
+      }
+      if (req.body.postalCode) {
+        user.postalCode = req.body.postalCode;
+      }
+
+      await user.save();
+      res.send(user);
+    } catch (err) {
+      res.status(500).send();
+    }
+  });
+  //Admin
+  router.delete("/users/:id", authenticateAdmin, async (req, res) => {
     try {
       await User.deleteOne({ _id: req.params.id });
       res.status(204).send();
@@ -316,13 +384,14 @@ module.exports = (app) => {
     }
   });
 
+  //Everyone
   router.get("/categories", async (req, res) => {
-    const { page = 1, pageLimit = 9, filters } = req.query;
+    const { page = 1, filters } = req.query;
 
     try {
       const categories = await Category.find()
         .limit(pageLimit * 1)
-        .skip((page - 1) * pageLimit)
+        .skip((page - 1) * pageLimit);
 
       const count = await Category.countDocuments();
 
@@ -335,7 +404,7 @@ module.exports = (app) => {
       res.status(500).send();
     }
   });
-
+  //Everyone
   router.get("/categories/:id", async (req, res) => {
     try {
       const category = await Category.find({ _id: req.params.id });
@@ -345,8 +414,8 @@ module.exports = (app) => {
       res.status(500).send();
     }
   });
-
-  router.post("/categories", async (req, res) => {
+  //Admin
+  router.post("/categories", authenticateAdmin, async (req, res) => {
     try {
       const category = new Category({
         category: req.body.category,
@@ -359,7 +428,8 @@ module.exports = (app) => {
     }
   });
 
-  router.patch("/categories/:id", async (req, res) => {
+  //Admin
+  router.patch("/categories/:id", authenticateAdmin, async (req, res) => {
     try {
       const category = await Category.findOne({ _id: req.params.id });
 
@@ -380,7 +450,8 @@ module.exports = (app) => {
     }
   });
 
-  router.delete("/categories/:id", async (req, res) => {
+  //Admin
+  router.delete("/categories/:id", authenticateAdmin, async (req, res) => {
     try {
       await Category.deleteOne({ _id: req.params.id });
       res.status(204).send();
@@ -389,14 +460,14 @@ module.exports = (app) => {
     }
   });
 
-  router.get("/orders", async (req, res) => {
+  //Admin
+  router.get("/orders", authenticateAdmin, async (req, res) => {
     const { page = 1, filters } = req.query;
 
     try {
-      const orders = await Order.find().populate({
-        path: "userId",
-        select: "-password -isAdmin -isSuperAdmin",
-      });
+      const orders = await Order.find()
+        .limit(pageLimit * 1)
+        .skip((page - 1) * pageLimit);
 
       const count = await Order.countDocuments();
 
@@ -409,8 +480,8 @@ module.exports = (app) => {
       res.status(500).send();
     }
   });
-
-  router.get("/orders/:id", async (req, res) => {
+  //Admin
+  router.get("/orders/:id", authenticateAdmin, async (req, res) => {
     try {
       const order = await Order.find({ _id: req.params.id });
 
@@ -419,9 +490,30 @@ module.exports = (app) => {
       res.send(err.message);
     }
   });
+  //Admin
+  router.get("/orders/user/:id", authenticateAdmin, async (req, res) => {
+    try {
+      const order = await Order.find({ userId: req.params.id });
 
+      res.send(order);
+    } catch (err) {
+      res.send(err.message);
+    }
+  });
+  //User get specific order
+  router.get("user/orders/:id", authenticateToken, async (req, res) => {
+    try {
+      const order = await Order.find({ _id: req.params.id });
+      if (order.userId != req.user._id)
+        return res.status(403).send("Can only access your own orders!");
 
-  //GET ORDER OF USER
+      res.send(order);
+    } catch (err) {
+      res.send(err.message);
+    }
+  });
+
+  //User get personal orders
   router.get("/user/orders", authenticateToken, async (req, res) => {
     try {
       const order = await Order.find({ userId: req.user._id });
@@ -431,8 +523,8 @@ module.exports = (app) => {
       res.send(err.message);
     }
   });
-
-  router.post("/orders", async (req, res) => {
+  //Logged in users
+  router.post("/orders", authenticateToken, async (req, res) => {
     try {
       const order = new Order({
         userId: req.body.userId,
@@ -444,8 +536,8 @@ module.exports = (app) => {
       res.status(500).send();
     }
   });
-
-  router.patch("/orders/:id", async (req, res) => {
+  //Admin
+  router.patch("/orders/:id", authenticateAdmin, async (req, res) => {
     try {
       const order = await Order.findOne({ _id: req.params.id });
 
@@ -465,8 +557,8 @@ module.exports = (app) => {
       res.status(500).send();
     }
   });
-
-  router.delete("/orders/:id", async (req, res) => {
+  //Admin
+  router.delete("/orders/:id", authenticateAdmin, async (req, res) => {
     try {
       await Order.deleteOne({ _id: req.params.id });
       res.status(204).send();
@@ -474,11 +566,13 @@ module.exports = (app) => {
       res.status(500).send();
     }
   });
-
-  router.get("/orderdetails", async (req, res) => {
-    const { page = 1, pageLimit = 9, filters } = req.query;
+  //Admin
+  router.get("/orderdetails", authenticateAdmin, async (req, res) => {
+    const { page = 1, filters } = req.query;
     try {
       const orderdetails = await OrderDetail.find()
+        .limit(pageLimit * 1)
+        .skip((page - 1) * pageLimit);
 
       const count = await OrderDetail.countDocuments();
       res.json({
@@ -492,7 +586,8 @@ module.exports = (app) => {
   });
 
   //GET BY ORDERID
-  router.get("/orderdetails/:id", async (req, res) => {
+  //Admin
+  router.get("/orderdetails/:id", authenticateAdmin, async (req, res) => {
     try {
       const orderdetail = await OrderDetail.find({ orderId: req.params.id });
       res.send(orderdetail);
@@ -500,8 +595,21 @@ module.exports = (app) => {
       res.status(500).send();
     }
   });
-
-  router.post("/orderdetails", async (req, res) => {
+  //GET BY ORDERID
+  //User get personal Order
+  router.get("/user/orderdetails/:id", authenticateToken, async (req, res) => {
+    try {
+      const order = await Order.findOne({ _id: req.params.id });
+      if (order.userId != req.user._id)
+        return res.status(403).send("Can only access your own orders!");
+      const orderdetail = await OrderDetail.find({ orderId: req.params.id });
+      res.send(orderdetail);
+    } catch (err) {
+      res.status(500).send();
+    }
+  });
+  //Logged in users
+  router.post("/orderdetails", authenticateToken, async (req, res) => {
     try {
       const orderdetail = new OrderDetail({
         productId: req.body.productId,
@@ -515,7 +623,8 @@ module.exports = (app) => {
     }
   });
 
-  router.patch("/orderdetails/:id", async (req, res) => {
+  //Admin
+  router.patch("/orderdetails/:id", authenticateAdmin, async (req, res) => {
     try {
       const orderdetail = await OrderDetail.findOne({ _id: req.params.id });
       if (req.body._id) {
@@ -537,26 +646,37 @@ module.exports = (app) => {
       res.status(500).send();
     }
   });
+  //Admin
+  router.delete("/orderdetails/:id", authenticateAdmin, async (req, res) => {
+    try {
+      await Category.deleteMany({ orderId: req.params.id });
+      res.status(204).send();
+    } catch (err) {
+      res.status(500).send();
+    }
+  });
 
+  //Prefix
   app.use("/api", router);
 
   module.exports = router;
 };
-
+//Authenticate if accessToken is from an admin
 function authenticateAdmin(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
   if (token == null) return res.sendStatus(401);
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
-    if (user.isAdmin) {
+    if (user.isAdmin || user.isSuperAdmin) {
       req.user = user;
       next();
     } else {
-      if (err) return res.sendStatus(403);
+      return res.sendStatus(403);
     }
   });
 }
+//Authenticate if there is an access token - Is logged in
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];

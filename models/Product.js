@@ -16,7 +16,7 @@ const ProductSchema = mongoose.Schema({
   description: {
     type: String,
     required: true,
-    maxlength: [100, "Description is too long!"],
+    maxlength: [250, "Description is too long!"],
   },
   isActive: {
     type: Boolean,
