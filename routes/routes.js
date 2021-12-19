@@ -407,7 +407,7 @@ module.exports = (app) => {
   //Everyone
   router.get("/categories/:id", async (req, res) => {
     try {
-      const category = await Category.find({ _id: req.params.id });
+      const category = await Category.findOne({ _id: req.params.id });
 
       res.send(category);
     } catch (err) {
