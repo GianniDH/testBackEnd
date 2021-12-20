@@ -318,7 +318,7 @@ module.exports = (app) => {
       if (req.body._id) {
         user._id = req.body._id;
       }
-      if (req.body.isAdmin) {
+      if (req.body.isAdmin != "" && req.body.isAdmin != undefined) {
         if (user.isAdmin != req.body.isAdmin) {
           if (!req.user.isSuperAdmin) {
             return res.sendStatus(403);
@@ -326,8 +326,8 @@ module.exports = (app) => {
           user.isAdmin = req.body.isAdmin;
         }
       }
-      if (req.body.isSuperAdmin) {
-        if (user.isSuperAdmin.toString() != req.body.isSuperAdmin) {
+      if (req.body.isSuperAdmin !== "" && req.body.isSuperAdmin !== undefined) {
+        if (user.isSuperAdmin != req.body.isSuperAdmin) {
           if (!req.user.isSuperAdmin) {
             return res.sendStatus(403);
           }
@@ -336,7 +336,7 @@ module.exports = (app) => {
           isSuperAdmin: true,
         }).countDocuments();
         if (adminCount > 1 || req.body.isSuperAdmin != "false") {
-          user.isSuperAdmin.toString() = req.body.isSuperAdmin;
+          user.isSuperAdmin = req.body.isSuperAdmin;
         } else if (
           adminCount <= 1 &&
           req.body.isSuperAdmin != "true" &&
@@ -353,10 +353,6 @@ module.exports = (app) => {
       }
       if (req.body.email) {
         user.email = req.body.email;
-      }
-      if (req.body.password) {
-        const hashedPassword = await bcrypt.hash(req.body.password, 10);
-        user.password = hashedPassword;
       }
       if (req.body.phoneNr) {
         user.phoneNr = req.body.phoneNr;
@@ -375,6 +371,7 @@ module.exports = (app) => {
       res.send(user);
     } catch (err) {
       res.status(500).send();
+      console.log(err);
     }
   });
   //User personal edit
