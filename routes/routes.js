@@ -278,7 +278,7 @@ module.exports = (app) => {
         );
         res.json({ accessToken: accessToken, user: user });
       } else {
-        res.send("Not Allowed!");
+        res.status(400).send("Password does not match!");
       }
     } catch {
       res.status(500).send();
@@ -383,7 +383,7 @@ module.exports = (app) => {
       await user.save();
       res.send(user);
     } catch (err) {
-      res.status(500).send();
+      res.status(500).send(err);
     }
   });
   //Admin
@@ -414,6 +414,14 @@ module.exports = (app) => {
       });
     } catch (err) {
       res.status(500).send();
+    }
+  });
+  router.get("/headcategories", async (req, res) => {
+    try {
+      const headCategories = await Category.find({ headCategory: null });
+      res.send(headCategories);
+    } catch (error) {
+      res.sendStatus(500);
     }
   });
   //Everyone
