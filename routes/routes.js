@@ -68,6 +68,7 @@ module.exports = (app) => {
     }
     const stock = filters["stock"] ?? "";
     const name = filters["name"] ?? "";
+    let filter_products = products;
     if (stock != "") {
       if (stock == "1") {
         filter_product = products.filter((p) => p.amountInStock > 0);
@@ -80,12 +81,7 @@ module.exports = (app) => {
         p.name.toLowerCase().includes(name.toLowerCase())
       );
     } else {
-      if(filter_products == undefined){
-              filter_product = products;
-      }
-      else{
-              filter_product = filter_product;
-      }
+      filter_product = filter_product;
     }
     const count = await Product.countDocuments();
 
