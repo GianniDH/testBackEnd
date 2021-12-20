@@ -579,7 +579,7 @@ module.exports = (app) => {
     }
   });
 
-  router.get("/sendMail", async (req, res) => {
+  router.post("/sendMail", authenticateToken, async (req, res) => {
     try {
       const user = await User.findOne({_id: req.body.userId});
       email = user.email;
