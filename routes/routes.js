@@ -83,8 +83,7 @@ module.exports = (app) => {
     } else {
       filter_product = filter_product;
     }
-    // const count = await Product.countDocuments();
-    const count = filter_product.length++;
+    const count = await Product.countDocuments();
 
     res.json({
       filter_product,
@@ -208,7 +207,6 @@ module.exports = (app) => {
         if (err) {
           console.log(err);
         } else {
-          console.log(result);
           users = result;
         }
       })
