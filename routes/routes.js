@@ -335,7 +335,7 @@ module.exports = (app) => {
         const adminCount = await User.find({
           isSuperAdmin: true,
         }).countDocuments();
-        if (adminCount > 1 && req.body.isSuperAdmin != "false") {
+        if (adminCount > 1) {
           user.isSuperAdmin = req.body.isSuperAdmin;
         } else if (adminCount <= 1 && req.body.isSuperAdmin != "true") {
           return res.status(403).send("Can't delete the last super admin!");
