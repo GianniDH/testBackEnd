@@ -47,14 +47,6 @@ module.exports = (app) => {
   };
 
   //Everyone
-  router.get("/debug", async (req, res) => {
-    filter = getFilters(req.query);
-    let user;
-    await Product.find(filter).then((res) => {
-      user = res;
-    });
-    res.send(user);
-  });
   router.get("/products", async (req, res, next) => {
     const filters = req.query;
     const page = filters["page"] ?? 1;
