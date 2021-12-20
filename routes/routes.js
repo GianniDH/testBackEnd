@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const nodemailer = require("nodemailer");
-var moment = require('moment');
+var moment = require("moment");
 
 const pageLimit = 9;
 module.exports = (app) => {
@@ -18,14 +18,12 @@ module.exports = (app) => {
   const express = require("express");
   const router = express.Router();
   let transporter = nodemailer.createTransport({
-    service: 'gmail',
+    service: "gmail",
     auth: {
       user: process.env.EMAIL,
-      pass: process.env.PASSWORD
-    }
-  })
-  
-  
+      pass: process.env.PASSWORD,
+    },
+  });
 
   //Everyone
   router.get("/products", async (req, res, next) => {
@@ -73,7 +71,7 @@ module.exports = (app) => {
     if (stock != "") {
       if (stock == "1") {
         filter_product = products.filter((p) => p.amountInStock > 0);
-      } else if(stock == "0"){
+      } else if (stock == "0") {
         filter_product = products.filter((p) => p.amountInStock <= 0);
       }
     }
@@ -82,7 +80,7 @@ module.exports = (app) => {
         p.name.toLowerCase().includes(name.toLowerCase())
       );
     } else {
-      filter_product = products;
+      filter_product = filter_product;
     }
     const count = await Product.countDocuments();
 
@@ -572,7 +570,7 @@ module.exports = (app) => {
         date: req.body.date,
       });
       await order.save();
-      
+
       res.send(order);
     } catch (err) {
       res.status(500).send();
@@ -581,38 +579,53 @@ module.exports = (app) => {
 
   router.post("/sendMail", authenticateToken, async (req, res) => {
     try {
-      const user = await User.findOne({_id: req.body.userId});
+      const user = await User.findOne({ _id: req.body.userId });
       email = user.email;
       user_name = user.firstName;
-      formatted_date = moment(req.body.date).format('DD-MM-YYYY');
-      let purchases = await OrderDetail.find({orderId: req.body._id})
+      formatted_date = moment(req.body.date).format("DD-MM-YYYY");
+      let purchases = await OrderDetail.find({ orderId: req.body._id });
 
       purchased_products = "";
       total_price = 0;
-      for (i in purchases){
-        const product = await Product.findOne({_id: purchases[i].productId});
-        purchased_products += purchases[i].amount + ' - ' + product.name + ' (€' + product.price + '/stuk) voor een totaal van ' + '€' + product.price * purchases[i].amount + '.\n';
+      for (i in purchases) {
+        const product = await Product.findOne({ _id: purchases[i].productId });
+        purchased_products +=
+          purchases[i].amount +
+          " - " +
+          product.name +
+          " (€" +
+          product.price +
+          "/stuk) voor een totaal van " +
+          "€" +
+          product.price * purchases[i].amount +
+          ".\n";
         total_price += purchases[i].amount * product.price;
       }
-      purchased_products += "Totaalprijs: €" +total_price + '\n';
-     
+      purchased_products += "Totaalprijs: €" + total_price + "\n";
+
       //Mail service
       const mailOptions = {
-        from: 'NGLSports',
+        from: "NGLSports",
         to: email,
-        subject: 'NGLSports Bestelling #' + req.body._id,
-        text: 'Beste ' + user_name + ', \n\nUw order geplaatst op: ' + formatted_date + ' is succesvol ontvangen en is in verwerking. \n\nHier zijn uw aangekochte producten:\n' + purchased_products + '\nBedankt voor uw aankoop! \n\nMet vriendelijke groeten,\nNGLSports'
+        subject: "NGLSports Bestelling #" + req.body._id,
+        text:
+          "Beste " +
+          user_name +
+          ", \n\nUw order geplaatst op: " +
+          formatted_date +
+          " is succesvol ontvangen en is in verwerking. \n\nHier zijn uw aangekochte producten:\n" +
+          purchased_products +
+          "\nBedankt voor uw aankoop! \n\nMet vriendelijke groeten,\nNGLSports",
       };
-      
-      transporter.sendMail(mailOptions, function(err, data){
-        if(err){
+
+      transporter.sendMail(mailOptions, function (err, data) {
+        if (err) {
           console.log(err);
-        }else{
+        } else {
           console.log("Mail sent to: " + email);
         }
-      })
+      });
       res.status(200).send();
-
     } catch (err) {
       res.send(err.message);
     }
@@ -690,7 +703,7 @@ module.exports = (app) => {
     }
   });
   //Logged in users
-  router.post("/orderdetails",  authenticateToken,  async (req, res) => {
+  router.post("/orderdetails", authenticateToken, async (req, res) => {
     try {
       const orderdetail = new OrderDetail({
         productId: req.body.productId,
