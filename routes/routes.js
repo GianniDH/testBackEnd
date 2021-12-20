@@ -30,7 +30,7 @@ module.exports = (app) => {
   //Everyone
   router.get("/products", async (req, res, next) => {
     const filters = req.query;
-    const page = filters["page"];
+    const page = filters["page"] ?? 1;
     idsString = filters["categoryId"] ?? "";
     ids = idsString.split("$id[]");
     if (idsString != "") {
