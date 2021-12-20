@@ -4,6 +4,7 @@ const { count } = require("../models/Product");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const nodemailer = require("nodemailer");
 
 const pageLimit = 9;
 module.exports = (app) => {
@@ -15,6 +16,15 @@ module.exports = (app) => {
 
   const express = require("express");
   const router = express.Router();
+  let transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.PASSWORD
+    }
+  })
+  
+  
 
   //Everyone
   router.get("/products", async (req, res, next) => {
@@ -546,11 +556,32 @@ module.exports = (app) => {
   //Logged in users
   router.post("/orders", authenticateToken, async (req, res) => {
     try {
+      const user = await User.findOne({_id: req.body.userId});
+      email = user.email;
+      user_name = user.firstName;
       const order = new Order({
         userId: req.body.userId,
         date: req.body.date,
       });
+      console.log(email);
+      console.log(user_name);
       await order.save();
+
+      //Mail service
+      const mailOptions = {
+        from: 'nglsportssupp@gmail.com',
+        to: email,
+        subject: 'Bestelling #' + order._id,
+        text: 'Beste ' + user_name + ', \n\nJe order geplaatst op: ' + req.body.date + ' is succesvol ontvangen en is in verwerking. Veel plezier met je aankoop! \n\n\nMet vriendelijke groeten,\nNGLSports'
+      };
+      
+      transporter.sendMail(mailOptions, function(err, data){
+        if(err){
+          console.log(err);
+        }else{
+          console.log("Works!");
+        }
+      })
       res.send(order);
     } catch (err) {
       res.status(500).send();
