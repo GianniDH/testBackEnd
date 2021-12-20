@@ -203,9 +203,17 @@ module.exports = (app) => {
   router.get("/users", authenticateAdmin, async (req, res) => {
     const { page = 1, filters } = req.query;
     try {
-      const users = await User.find()
+      let users;
+      User.find({}, function (err, result) {
+        if (err) {
+          console.log(err);
+        } else {
+          console.log(result);
+          users = result;
+        }
+      })
         .limit(pageLimit * 1)
-        .skip((pageLimit - 1) * pageLimit);
+        .skip((page - 1) * pageLimit);
 
       const count = await User.countDocuments();
       res.json({
