@@ -80,7 +80,12 @@ module.exports = (app) => {
         p.name.toLowerCase().includes(name.toLowerCase())
       );
     } else {
-      filter_product = filter_product ?? products;
+      if(filter_products == []){
+              filter_product = products;
+      }
+      else{
+              filter_product = filter_product;
+      }
     }
     const count = await Product.countDocuments();
 
