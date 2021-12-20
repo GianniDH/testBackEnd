@@ -293,9 +293,19 @@ module.exports = (app) => {
         user._id = req.body._id;
       }
       if (req.body.isAdmin) {
-        user.isAdmin = req.body.isAdmin;
+        if (user.isAdmin != req.body.isAdmin) {
+          if (!req.user.isSuperAdmin) {
+            return res.sendStatus(403);
+          }
+          user.isAdmin = req.body.isAdmin;
+        }
       }
       if (req.body.isSuperAdmin) {
+        if (user.isSuperAdmin != req.body.isSuperAdmin) {
+          if (!req.user.isSuperAdmin) {
+            return res.sendStatus(403);
+          }
+        }
         user.isSuperAdmin = req.body.isSuperAdmin;
       }
       if (req.body.lastName) {
