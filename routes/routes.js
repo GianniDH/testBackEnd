@@ -140,6 +140,14 @@ module.exports = (app) => {
       res.send(err.message);
     }
   });
+    router.patch("/user/stock", authenticateToken, async (req, res) => {
+    const product = await Product.findOne({ _id: req.params.id });
+    if (req.body.amountInStock || req.body.amountInStock == 0) {
+      product.amountInStock = req.body.amountInStock;
+    }
+    await product.save();
+    res.send(product);
+  });
 
   //Admin
   router.patch("/products/:id", authenticateAdmin, async (req, res) => {
