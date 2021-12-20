@@ -43,6 +43,14 @@ module.exports = (app) => {
         filter.amountInStock = { $gt: 0 };
       }
     }
+    const isActive = filters["isActive"] ?? "";
+    if (isActive != "") {
+      if (isActive == "0") {
+        filter.isActive = { $lt: 1 };
+      } else if (isActive == "1") {
+        filter.isActive = { $gt: 0 };
+      }
+    }
     return filter;
   };
 
