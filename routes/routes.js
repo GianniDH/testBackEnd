@@ -68,7 +68,7 @@ module.exports = (app) => {
     }
     const stock = filters["stock"] ?? "";
     const name = filters["name"] ?? "";
-    let filter_products = products;
+    let filter_product = products;
     if (stock != "") {
       if (stock == "1") {
         filter_product = products.filter((p) => p.amountInStock > 0);
