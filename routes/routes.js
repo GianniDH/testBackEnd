@@ -78,7 +78,7 @@ module.exports = (app) => {
       }
     }
     if (name != "") {
-      filter_product = products.filter((p) =>
+      filter_product = filter_product.filter((p) =>
         p.name.toLowerCase().includes(name.toLowerCase())
       );
     } else {
