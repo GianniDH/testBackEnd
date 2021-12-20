@@ -332,7 +332,14 @@ module.exports = (app) => {
             return res.sendStatus(403);
           }
         }
-        user.isSuperAdmin = req.body.isSuperAdmin;
+        const adminCount = await User.find({
+          isSuperAdmin: true,
+        }).countDocuments();
+        if (adminCount > 1 && req.body.isSuperAdmin != "false") {
+          user.isSuperAdmin = req.body.isSuperAdmin;
+        } else if (adminCount <= 1 && req.body.isSuperAdmin != "true") {
+          return res.status(403).send("Can't delete the last super admin!");
+        }
       }
       if (req.body.lastName) {
         user.lastName = req.body.lastName;
@@ -509,14 +516,14 @@ module.exports = (app) => {
   });
 
   //Admin
-  router.get("/orders", authenticateAdmin,  async (req, res) => {
+  router.get("/orders", authenticateAdmin, async (req, res) => {
     const { page = 1, filters } = req.query;
 
     try {
       const orders = await Order.find()
         .limit(pageLimit * 1)
         .skip((page - 1) * pageLimit)
-        .sort({date: 'desc'});
+        .sort({ date: "desc" });
 
       const count = await Order.countDocuments();
 
@@ -532,7 +539,9 @@ module.exports = (app) => {
   //Admin
   router.get("/orders/:id", authenticateAdmin, async (req, res) => {
     try {
-      const order = await Order.find({ _id: req.params.id }).sort({date: 'desc'});
+      const order = await Order.find({ _id: req.params.id }).sort({
+        date: "desc",
+      });
 
       res.send(order);
     } catch (err) {
@@ -542,7 +551,9 @@ module.exports = (app) => {
   //Admin
   router.get("/orders/user/:id", authenticateAdmin, async (req, res) => {
     try {
-      const order = await Order.findOne({ userId: req.params.id }).sort({date: 'desc'});
+      const order = await Order.findOne({ userId: req.params.id }).sort({
+        date: "desc",
+      });
 
       res.send(order);
     } catch (err) {
@@ -552,7 +563,9 @@ module.exports = (app) => {
   //User get specific order
   router.get("/user/orders/:id", authenticateToken, async (req, res) => {
     try {
-      const order = await Order.findOne({ _id: req.params.id }).sort({date: 'desc'});
+      const order = await Order.findOne({ _id: req.params.id }).sort({
+        date: "desc",
+      });
       if (order.userId != req.user._id)
         return res.status(403).send("Can only access your own orders!");
 
@@ -565,9 +578,9 @@ module.exports = (app) => {
   //User get personal orders
   router.get("/user/orders", authenticateToken, async (req, res) => {
     try {
-      const order = await Order.find({ userId: req.user._id }).sort({date: 'desc'});
-      ;
-
+      const order = await Order.find({ userId: req.user._id }).sort({
+        date: "desc",
+      });
       res.send(order);
     } catch (err) {
       res.send(err.message);
