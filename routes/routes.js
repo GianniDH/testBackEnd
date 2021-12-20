@@ -329,7 +329,11 @@ module.exports = (app) => {
         }).countDocuments();
         if (adminCount > 1 || req.body.isSuperAdmin != "false") {
           user.isSuperAdmin = req.body.isSuperAdmin;
-        } else if (adminCount <= 1 && req.body.isSuperAdmin != "true") {
+        } else if (
+          adminCount <= 1 &&
+          req.body.isSuperAdmin != "true" &&
+          user.isSuperAdmin != req.body.isSuperAdmin
+        ) {
           return res.status(403).send("Can't delete the last super admin!");
         }
       }
