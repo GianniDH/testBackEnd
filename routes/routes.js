@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const nodemailer = require("nodemailer");
+var moment = require('moment');
 
 const pageLimit = 9;
 module.exports = (app) => {
@@ -67,7 +68,15 @@ module.exports = (app) => {
           .catch((err) => console.log(err));
       }
     }
+    const stock = filters["stock"] ?? "";
     const name = filters["name"] ?? "";
+    if (stock != "") {
+      if (stock == 1) {
+        filter_product = products.filter((p) => p.amountInStock > 0);
+      } else {
+        filter_product = products.filter((p) => p.amountInStock <= 0);
+      }
+    }
     if (name != "") {
       filter_product = products.filter((p) =>
         p.name.toLowerCase().includes(name.toLowerCase())
@@ -471,8 +480,7 @@ module.exports = (app) => {
       }
       if (req.body.headCategory) {
         category.headCategory = req.body.headCategory;
-      }
-      else {
+      } else {
         category.headCategory = undefined;
       }
 
@@ -526,7 +534,7 @@ module.exports = (app) => {
   //Admin
   router.get("/orders/user/:id", authenticateAdmin, async (req, res) => {
     try {
-      const order = await Order.find({ userId: req.params.id });
+      const order = await Order.findOne({ userId: req.params.id });
 
       res.send(order);
     } catch (err) {
@@ -559,35 +567,54 @@ module.exports = (app) => {
   //Logged in users
   router.post("/orders", authenticateToken, async (req, res) => {
     try {
-      const user = await User.findOne({_id: req.body.userId});
-      email = user.email;
-      user_name = user.firstName;
       const order = new Order({
         userId: req.body.userId,
         date: req.body.date,
       });
-      console.log(email);
-      console.log(user_name);
       await order.save();
+      
+      res.send(order);
+    } catch (err) {
+      res.status(500).send();
+    }
+  });
 
+  router.get("/sendMail", async (req, res) => {
+    try {
+      const user = await User.findOne({_id: req.body.userId});
+      email = user.email;
+      user_name = user.firstName;
+      formatted_date = moment(req.body.date).format('DD-MM-YYYY');
+      let purchases = await OrderDetail.find({orderId: req.body._id})
+
+      purchased_products = "";
+      total_price = 0;
+      for (i in purchases){
+        const product = await Product.findOne({_id: purchases[i].productId});
+        purchased_products += purchases[i].amount + ' - ' + product.name + ' (€' + product.price + '/stuk) voor een totaal van ' + '€' + product.price * purchases[i].amount + '.\n';
+        total_price += purchases[i].amount * product.price;
+      }
+      purchased_products += "Totaalprijs: €" +total_price + '\n';
+     
       //Mail service
       const mailOptions = {
-        from: 'nglsportssupp@gmail.com',
+        from: 'NGLSports',
         to: email,
-        subject: 'Bestelling #' + order._id,
-        text: 'Beste ' + user_name + ', \n\nJe order geplaatst op: ' + req.body.date + ' is succesvol ontvangen en is in verwerking. Veel plezier met je aankoop! \n\n\nMet vriendelijke groeten,\nNGLSports'
+        subject: 'NGLSports Bestelling #' + req.body._id,
+        text: 'Beste ' + user_name + ', \n\nUw order geplaatst op: ' + formatted_date + ' is succesvol ontvangen en is in verwerking. \n\nHier zijn uw aangekochte producten:\n' + purchased_products + '\nBedankt voor uw aankoop! \n\nMet vriendelijke groeten,\nNGLSports'
       };
       
       transporter.sendMail(mailOptions, function(err, data){
         if(err){
           console.log(err);
         }else{
-          console.log("Works!");
+          console.log("Mail sent to: " + email);
         }
       })
-      res.send(order);
+      res.status(200).send();
+
     } catch (err) {
-      res.status(500).send();
+      res.send(err.message);
     }
   });
   //Admin
@@ -663,7 +690,7 @@ module.exports = (app) => {
     }
   });
   //Logged in users
-  router.post("/orderdetails", authenticateToken, async (req, res) => {
+  router.post("/orderdetails",  authenticateToken,  async (req, res) => {
     try {
       const orderdetail = new OrderDetail({
         productId: req.body.productId,
