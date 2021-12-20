@@ -80,7 +80,7 @@ module.exports = (app) => {
         p.name.toLowerCase().includes(name.toLowerCase())
       );
     } else {
-      if(filter_products == []){
+      if(filter_products == undefined){
               filter_product = products;
       }
       else{
