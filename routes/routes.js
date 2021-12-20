@@ -539,7 +539,7 @@ module.exports = (app) => {
   //Admin
   router.get("/orders/:id", authenticateAdmin, async (req, res) => {
     try {
-      const order = await Order.find({ _id: req.params.id });
+      const order = await Order.find({ _id: req.params.id }).sort({date: 'desc'});
 
       res.send(order);
     } catch (err) {
@@ -549,7 +549,7 @@ module.exports = (app) => {
   //Admin
   router.get("/orders/user/:id", authenticateAdmin, async (req, res) => {
     try {
-      const order = await Order.findOne({ userId: req.params.id });
+      const order = await Order.findOne({ userId: req.params.id }).sort({date: 'desc'});
 
       res.send(order);
     } catch (err) {
@@ -559,7 +559,7 @@ module.exports = (app) => {
   //User get specific order
   router.get("/user/orders/:id", authenticateToken, async (req, res) => {
     try {
-      const order = await Order.findOne({ _id: req.params.id });
+      const order = await Order.findOne({ _id: req.params.id }).sort({date: 'desc'});
       if (order.userId != req.user._id)
         return res.status(403).send("Can only access your own orders!");
 
@@ -572,7 +572,8 @@ module.exports = (app) => {
   //User get personal orders
   router.get("/user/orders", authenticateToken, async (req, res) => {
     try {
-      const order = await Order.find({ userId: req.user._id });
+      const order = await Order.find({ userId: req.user._id }).sort({date: 'desc'});
+      ;
 
       res.send(order);
     } catch (err) {
