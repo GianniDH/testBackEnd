@@ -155,7 +155,7 @@ module.exports = (app) => {
       if (req.body.name) {
         product.name = req.body.name;
       }
-      if (req.body.price) {
+      if (req.body.price || req.body.price == 0) {
         product.price = req.body.price;
       }
       if (req.body.description) {
@@ -164,7 +164,7 @@ module.exports = (app) => {
       if (req.body.isActive) {
         product.isActive = req.body.isActive;
       }
-      if (req.body.amountInStock) {
+      if (req.body.amountInStock || req.body.amountInStock == 0) {
         product.amountInStock = req.body.amountInStock;
       }
       if (req.body.size) {
