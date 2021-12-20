@@ -531,7 +531,7 @@ module.exports = (app) => {
     }
   });
   //User get specific order
-  router.get("user/orders/:id", authenticateToken, async (req, res) => {
+  router.get("/user/orders/:id", authenticateToken, async (req, res) => {
     try {
       const order = await Order.findOne({ _id: req.params.id });
       if (order.userId != req.user._id)
