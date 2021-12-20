@@ -318,7 +318,8 @@ module.exports = (app) => {
         user.email = req.body.email;
       }
       if (req.body.password) {
-        user.password = req.body.password;
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        user.password = hashedPassword;
       }
       if (req.body.phoneNr) {
         user.phoneNr = req.body.phoneNr;
@@ -363,7 +364,8 @@ module.exports = (app) => {
         user.email = req.body.email;
       }
       if (req.body.password) {
-        user.password = req.body.password;
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        user.password = hashedPassword;
       }
       if (req.body.phoneNr) {
         user.phoneNr = req.body.phoneNr;
