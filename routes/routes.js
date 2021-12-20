@@ -24,69 +24,62 @@ module.exports = (app) => {
       pass: process.env.PASSWORD,
     },
   });
+  const getFilters = (filters) => {
+    let filter = {};
+    idsString = filters["categoryId"] ?? "";
+    if (idsString != "") {
+      ids = idsString.split("$id[]");
+      filter.categoryId = { $in: ids };
+    }
+    const name = filters["name"] ?? "";
+    if (name != "") {
+      filter.name = { $regex: name, $options: "i" };
+    }
+    const stock = filters["stock"] ?? "";
+    if (stock != "") {
+      if (stock == "0") {
+        filter.amountInStock = { $lt: 1 };
+      } else if (stock == "1") {
+        filter.amountInStock = { $gt: 0 };
+      }
+    }
+    return filter;
+  };
 
   //Everyone
+  router.get("/debug", async (req, res) => {
+    filter = getFilters(req.query);
+    let user;
+    await Product.find(filter).then((res) => {
+      user = res;
+    });
+    res.send(user);
+  });
   router.get("/products", async (req, res, next) => {
     const filters = req.query;
     const page = filters["page"] ?? 1;
-    idsString = filters["categoryId"] ?? "";
-    ids = idsString.split("$id[]");
-    if (idsString != "") {
-      if (filters["sort"] !== undefined) {
-        const order = filters["sort"] == "low-high" ? "asc" : "desc";
-        await Product.find({ categoryId: { $in: ids } })
-          .limit(pageLimit * 1)
-          .skip((page - 1) * pageLimit)
-          .sort({ price: order })
-          .then((productRes) => (products = productRes))
-          .catch((err) => console.log(err));
-      } else {
-        await Product.find({
-          categoryId: { $in: ids },
-        })
-          .limit(pageLimit * 1)
-          .skip((page - 1) * pageLimit)
-          .then((productRes) => (products = productRes))
-          .catch((err) => console.log(err));
-      }
+    const filter = getFilters(filters);
+    let products;
+    if (filters["sort"] !== undefined) {
+      const order = filters["sort"] == "low-high" ? "asc" : "desc";
+      await Product.find(filter)
+        .limit(pageLimit * 1)
+        .skip((page - 1) * pageLimit)
+        .sort({ price: order })
+        .then((productRes) => (products = productRes))
+        .catch((err) => console.log(err));
     } else {
-      if (filters["sort"] !== undefined) {
-        const order = filters["sort"] == "low-high" ? "asc" : "desc";
-        await Product.find()
-          .limit(pageLimit * 1)
-          .skip((page - 1) * pageLimit)
-          .sort({ price: order })
-          .then((productRes) => (products = productRes))
-          .catch((err) => console.log(err));
-      } else {
-        await Product.find()
-          .limit(pageLimit * 1)
-          .skip((page - 1) * pageLimit)
-          .then((productRes) => (products = productRes))
-          .catch((err) => console.log(err));
-      }
+      await Product.find(filter)
+        .limit(pageLimit * 1)
+        .skip((page - 1) * pageLimit)
+        .sort({ price: "asc" })
+        .then((productRes) => (products = productRes))
+        .catch((err) => console.log(err));
     }
-    const stock = filters["stock"] ?? "";
-    const name = filters["name"] ?? "";
-    let filter_product = products;
-    if (stock != "") {
-      if (stock == "1") {
-        filter_product = products.filter((p) => p.amountInStock > 0);
-      } else if (stock == "0") {
-        filter_product = products.filter((p) => p.amountInStock <= 0);
-      }
-    }
-    if (name != "") {
-      filter_product = filter_product.filter((p) =>
-        p.name.toLowerCase().includes(name.toLowerCase())
-      );
-    } else {
-      filter_product = filter_product;
-    }
-    const count = await Product.countDocuments();
+    const count = await Product.find(filter).countDocuments();
 
     res.json({
-      filter_product,
+      products,
       totalPages: Math.ceil(count / pageLimit),
       currentPage: page,
     });
