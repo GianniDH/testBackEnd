@@ -533,7 +533,7 @@ module.exports = (app) => {
   //User get specific order
   router.get("user/orders/:id", authenticateToken, async (req, res) => {
     try {
-      const order = await Order.find({ _id: req.params.id });
+      const order = await Order.findOne({ _id: req.params.id });
       if (order.userId != req.user._id)
         return res.status(403).send("Can only access your own orders!");
 
