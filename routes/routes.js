@@ -84,7 +84,7 @@ module.exports = (app) => {
       filter_product = filter_product;
     }
     // const count = await Product.countDocuments();
-    const count = filter_product.length;
+    const count = filter_product.length++;
 
     res.json({
       filter_product,
