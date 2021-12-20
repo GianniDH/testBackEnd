@@ -472,6 +472,9 @@ module.exports = (app) => {
       if (req.body.headCategory) {
         category.headCategory = req.body.headCategory;
       }
+      else {
+        category.headCategory = "";
+      }
 
       await category.save();
       res.send(category);
