@@ -140,7 +140,7 @@ module.exports = (app) => {
       res.send(err.message);
     }
   });
-    router.patch("/user/stock", authenticateToken, async (req, res) => {
+  router.patch("/user/stock", authenticateToken, async (req, res) => {
     const product = await Product.findOne({ _id: req.params.id });
     if (req.body.amountInStock || req.body.amountInStock == 0) {
       product.amountInStock = req.body.amountInStock;
@@ -516,13 +516,14 @@ module.exports = (app) => {
   });
 
   //Admin
-  router.get("/orders", authenticateAdmin, async (req, res) => {
+  router.get("/orders", authenticateAdmin,  async (req, res) => {
     const { page = 1, filters } = req.query;
 
     try {
       const orders = await Order.find()
         .limit(pageLimit * 1)
-        .skip((page - 1) * pageLimit);
+        .skip((page - 1) * pageLimit)
+        .sort({date: 'desc'});
 
       const count = await Order.countDocuments();
 
